@@ -141,7 +141,13 @@ public class KeyStoreHelper {
             }
           };
 
-          KeyManagerFactory kmf = toKeyManagerFactory(mgr);
+          KeyManagerFactory kmf;
+          if (key.getFormat() == null) {
+            kmf= KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            kmf.init(ks, keyPassword);
+          } else {
+            kmf=toKeyManagerFactory(mgr);
+          }
           for (String domain : domains) {
             if (domain.startsWith("*.")) {
               wildcardMgrMap.put(domain.substring(2), mgr);
@@ -159,11 +165,15 @@ public class KeyStoreHelper {
     this.aliasPassword = aliasPassword;
   }
 
+
   public static KeyManagerFactory toKeyManagerFactory(X509KeyManager mgr) throws Exception {
-    String keyStoreType = KeyStore.getDefaultType();
+    PrivateKey privateKey = mgr.getPrivateKey(null);
+    String keyStoreType = (privateKey.getFormat() == null) ? "PKCS11" : KeyStore.getDefaultType();
+
     KeyStore ks = KeyStore.getInstance(keyStoreType);
     ks.load(null, null);
-    ks.setKeyEntry("key", mgr.getPrivateKey(null), DUMMY_PASSWORD.toCharArray(), mgr.getCertificateChain(null));
+    ks.setKeyEntry("key", privateKey, DUMMY_PASSWORD.toCharArray(), mgr.getCertificateChain(null));
+
     String keyAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
     KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyAlgorithm);
     kmf.init(ks, DUMMY_PASSWORD.toCharArray());
@@ -267,6 +277,10 @@ public class KeyStoreHelper {
       }
     }
     if (alias != null) {
+      Enumeration<String> e= ks.aliases();
+      while(e.hasMoreElements()){
+        String x= e.nextElement();
+      }
       if (!ks.containsAlias(alias)) {
         throw new IllegalArgumentException("alias does not exist in the keystore: " + alias);
       }
