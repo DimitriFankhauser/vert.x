@@ -258,6 +258,7 @@ public class KeyStoreHelper {
       if (!ks.containsAlias(alias)) {
         throw new IllegalArgumentException("alias does not exist in the keystore: " + alias);
       }
+      // For a PKCS11-KS, the KS-Object references the objects on the HSM-HW. We cannot delete non-matching Aliases from the KS, otherwise they will be gone.
       if (!type.equalsIgnoreCase("PKCS11")) {
         List<String> ksAliases = Collections.list(ks.aliases());
         for (String ksAlias : ksAliases) {
